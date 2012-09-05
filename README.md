@@ -20,7 +20,7 @@ Or install it yourself as:
       port 25
       from SOURCE
       to DEST1,DEST2,DEST3
-      subject SUBJET
+      subject SUBJECT
       out_keys target_tag,pattern,value
     </match>
 
@@ -34,7 +34,7 @@ Or install it yourself as:
       domain gmail.com
       from SOURCE
       to DEST1,DEST2,DEST3
-      subject SUBJET
+      subject SUBJECT
       user USERNAME( ex. hoge@gmail.com)
       password PASSWORD
       enable_starttls_auto true
@@ -82,7 +82,7 @@ configure td-agent.conf for single node
       domain DOMAIN
       from SOURCE_MAIL_ADDRESS
       to DESTINATION_MAIL_ADDRESS
-      subject SUBJET
+      subject SUBJECT
       outkeys target_tag, pattern, value, message_time
     </match>
 
@@ -144,7 +144,7 @@ log server("/etc/td-agent/td-agent.conf")
       domain DOMAIN
       from SOURCE_MAIL_ADDRESS
       to DESTINATION_MAIL_ADDRESS
-      subject SUBJET
+      subject SUBJECT
       outkeys target_tag, pattern, value
     </match>
 
