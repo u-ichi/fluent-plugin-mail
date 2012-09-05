@@ -11,6 +11,10 @@ Or install it yourself as:
 
     $ gem install fluent-plugin-mail
 
+Or use td-agent : (on Ubuntu12.04)
+
+    $ udo /usr/lib/fluent/ruby/bin/fluent-gem install fluent-plugin-mail
+
 
 ##  Mail Configuration(no auth)
 
