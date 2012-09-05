@@ -7,16 +7,45 @@ Add this line to your application's Gemfile:
 
     gem 'fluent-plugin-mail'
 
-And then execute:
-
-    $ bundle
-
 Or install it yourself as:
 
     $ gem install fluent-plugin-mail
 
 
-## SingleNode's Usage
+##  Mail Configuration(no auth)
+
+    <match **>
+      type mail
+      host SMTPSERVER
+      port 25
+      from SOURCE
+      to DEST1,DEST2,DEST3
+      subject SUBJET
+      out_keys target_tag,pattern,value
+    </match>
+
+
+## Mail Configuration for Gmail(use TLS)
+
+    <match **>
+      type mail
+      host smtp.gmail.com
+      port 587
+      domain gmail.com
+      from SOURCE
+      to DEST1,DEST2,DEST3
+      subject SUBJET
+      user USERNAME( ex. hoge@gmail.com)
+      password PASSWORD
+      enable_starttls_auto true
+      out_keys target_tag,pattern,value
+    </match>
+
+
+
+## Usage Sample
+
+### SingleNode's syslog check
 
 use fluent_plugin_notifier(https://github.com/tagomoris/fluent-plugin-notifier)
 
@@ -58,7 +87,7 @@ configure td-agent.conf for single node
     </match>
 
 
-## MultiNode's Configuration for syslog
+### MulatiNode's syslog check
 
 use config_expander(https://github.com/tagomoris/fluent-plugin-config-expander)
 
@@ -119,22 +148,6 @@ log server("/etc/td-agent/td-agent.conf")
       outkeys target_tag, pattern, value
     </match>
 
-
-## Mail Configuration for Gmail(TLS)
-
-    <match **>
-      type mail
-      host smtp.gmail.com
-      port 587
-      domain gmail.com
-      from SOURCE
-      to DEST1,DEST2,DEST3
-      subject SUBJET
-      user USERNAME( ex. hoge@gmail.com)
-      password PASSWORD
-      enable_starttls_auto true
-      out_keys target_tag,pattern,value
-    </match>
 
 
 ## TODO

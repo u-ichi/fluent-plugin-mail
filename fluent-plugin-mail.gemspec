@@ -5,7 +5,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["yuichi.u@gmail.com"]
   gem.description   = %q{output plugin for Mail}
   gem.summary       = %q{output plugin for Mail}
-  gem.homepage      = "http://blog.udcp.net"
+  gem.homepage      = "https://github.com/u-ichi/fluent-plugin-mail"
   gem.rubyforge_project = "fluent-plugin-mail"
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
