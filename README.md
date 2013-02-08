@@ -16,7 +16,7 @@ Or use td-agent : (on Ubuntu12.04)
     $ sudo /usr/lib/fluent/ruby/bin/fluent-gem install fluent-plugin-mail
 
 
-##  Mail Configuration(no auth)
+##  Mail Configuration with out_keys (no auth)
 
     <match **>
       type mail
@@ -24,10 +24,49 @@ Or use td-agent : (on Ubuntu12.04)
       port 25
       from SOURCE
       to DEST1,DEST2,DEST3
-      subject SUBJECT
+      subject SUBJECT: %s
+      subject_out_keys target_tag
       out_keys target_tag,pattern,value
     </match>
 
+Email is sent like
+
+    From: SOURCE
+    To: DEST1,DEST2,DEST3
+    Subject: SUBJECT: #{target_tag}
+    Mime-Version: 1.0
+    Content-Type: text/plain; charset=utf-8
+
+    target_tag: #{target_tag}
+    pattern: #{pattern}
+    value: #{value}
+
+## Mail Configuration with Message Format (no auth)
+
+You may use `message` parameter to define mail format as you like. Use `\n` to put a return code.
+
+    <match **>
+      type mail
+      host SMTPSERVER
+      port 25
+      from SOURCE
+      to DEST1,DEST2,DEST3
+      subject SUBJECT: %s
+      subject_out_keys target_tag
+      message %s %s\n%s
+      message_out_keys target_tag,pattern,value
+    </match>
+
+Email is sent like
+
+    From: SOURCE
+    To: DEST1,DEST2,DEST3
+    Subject: SUBJECT: #{target_tag}
+    Mime-Version: 1.0
+    Content-Type: text/plain; charset=utf-8
+
+    #{target_tag} #{pattern}
+    #{value}
 
 ## Mail Configuration for Gmail(use TLS)
 
