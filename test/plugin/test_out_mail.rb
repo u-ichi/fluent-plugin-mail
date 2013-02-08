@@ -2,9 +2,7 @@ require 'helper'
 
 class MailOutputTest < Test::Unit::TestCase
 
-
-  CONFIG = %[
-    message out_mail: %s [%s] %s
+  CONFIG_OUT_KEYS = %[
     out_keys tag,time,value
     time_key time
     time_format %Y/%m/%d %H:%M:%S
@@ -16,18 +14,43 @@ class MailOutputTest < Test::Unit::TestCase
     to localhost@localdomain
   ]
 
-  def create_driver(conf=CONFIG,tag='test')
+  CONFIG_MESSAGE = %[
+    message out_mail: %s [%s]\\n%s
+    message_out_keys tag,time,value
+    time_key time
+    time_format %Y/%m/%d %H:%M:%S
+    tag_key tag
+    subject Fluentd Notification Alerm
+    host localhost
+    port 25
+    from localhost@localdomain
+    to localhost@localdomain
+  ]
+
+  def create_driver(conf=CONFIG_OUT_KEYS,tag='test')
     Fluent::Test::OutputTestDriver.new(Fluent::MailOutput, tag).configure(conf)
   end
 
   def test_configure
+    d = create_driver(CONFIG_OUT_KEYS)
+    assert_equal 'localhost', d.instance.host
+    d = create_driver(CONFIG_MESSAGE)
+    assert_equal 'localhost', d.instance.host
   end
 
-  def test_notice
-    d = create_driver
+  def test_out_keys
+    d = create_driver(CONFIG_OUT_KEYS)
     time = Time.now.to_i
     d.run do
-      d.emit({'value' => "message from fluentd out_mail: testing now"}, time)
+      d.emit({'value' => "out_keys mail from fluentd out_mail"}, time)
+    end
+  end
+
+  def test_message
+    d = create_driver(CONFIG_MESSAGE)
+    time = Time.now.to_i
+    d.run do
+      d.emit({'value' => "message mail from fluentd out_mail"}, time)
     end
   end
 

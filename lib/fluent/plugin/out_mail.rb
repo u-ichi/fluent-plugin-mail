@@ -1,7 +1,9 @@
 class Fluent::MailOutput < Fluent::Output
   Fluent::Plugin.register_output('mail', self)
 
-  config_param :out_keys, :string
+  config_param :out_keys, :string, :default => ""
+  config_param :message, :string, :default => nil
+  config_param :message_out_keys, :string, :default => ""
   config_param :time_key, :string, :default => nil
   config_param :time_format, :string, :default => nil
   config_param :tag_key, :string, :default => 'tag'
@@ -24,7 +26,18 @@ class Fluent::MailOutput < Fluent::Output
   def configure(conf)
     super
 
-    @out_keys = conf['out_keys'].split(',')
+    @out_keys = @out_keys.split(',')
+    @message_out_keys = @message_out_keys.split(',')
+
+    if @out_keys.empty? and @message.nil?
+      raise Fluent::ConfigError, "Either 'message' or 'out_keys' must be specifed."
+    end
+
+    begin
+      @message % (['1'] * @message_out_keys.length) if @message
+    rescue ArgumentError
+      raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
+    end
 
     if @time_key
       if @time_format
@@ -50,21 +63,8 @@ class Fluent::MailOutput < Fluent::Output
     messages = []
 
     es.each {|time,record|
-      values = []
-      last = @out_keys.length - 1
-
-      @out_keys.each do |key|
-        case key
-        when @time_key
-          values << @time_format_proc.call(time)
-        when @tag_key
-          values << tag
-        else
-          values << "#{key}: #{record[key].to_s}"
-        end
-      end
-
-      messages.push (values.join("\n"))
+      messages << create_key_value_message(tag, time, record) if @out_keys
+      messages << create_formatted_message(tag, time, record) if @message
     }
 
     messages.each do |msg|
@@ -80,6 +80,40 @@ class Fluent::MailOutput < Fluent::Output
 
   def format(tag, time, record)
     "#{Time.at(time).strftime('%Y/%m/%d %H:%M:%S')}\t#{tag}\t#{record.to_json}\n"
+  end
+
+  def create_key_value_message(tag, time, record)
+    values = []
+
+    @out_keys.each do |key|
+      case key
+      when @time_key
+        values << @time_format_proc.call(time)
+      when @tag_key
+        values << tag
+      else
+        values << "#{key}: #{record[key].to_s}"
+      end
+    end
+
+    values.join("\n")
+  end
+
+  def create_formatted_message(tag, time, record)
+    values = []
+
+    values = @message_out_keys.map do |key|
+      case key
+      when @time_key
+        @time_format_proc.call(time)
+      when @tag_key
+        tag
+      else
+        record[key].to_s
+      end
+    end
+
+    (@message % values).gsub(/\\n/, "\n")
   end
 
   def sendmail(msg)
