@@ -24,16 +24,16 @@ Or use td-agent : (on Ubuntu12.04)
       port 25
       from SOURCE
       to DEST1,DEST2,DEST3
-      subject SUBJECT
+      subject SUBJECT: %s
+      subject_out_keys target_tag
       out_keys target_tag,pattern,value
     </match>
 
 Email is sent like
 
-    Date: #{Date}
     From: SOURCE
     To: DEST1,DEST2,DEST3
-    Subject: SUBJECT
+    Subject: SUBJECT: #{target_tag}
     Mime-Version: 1.0
     Content-Type: text/plain; charset=utf-8
 
@@ -51,17 +51,17 @@ You may use `message` parameter to define mail format as you like. Use `\n` to p
       port 25
       from SOURCE
       to DEST1,DEST2,DEST3
-      subject SUBJECT
+      subject SUBJECT: %s
+      subject_out_keys target_tag
       message %s %s\n%s
       message_out_keys target_tag,pattern,value
     </match>
 
 Email is sent like
 
-    Date: #{Date}
     From: SOURCE
     To: DEST1,DEST2,DEST3
-    Subject: SUBJECT
+    Subject: SUBJECT: #{target_tag}
     Mime-Version: 1.0
     Content-Type: text/plain; charset=utf-8
 

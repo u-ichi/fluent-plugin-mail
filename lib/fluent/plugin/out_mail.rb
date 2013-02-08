@@ -15,6 +15,7 @@ class Fluent::MailOutput < Fluent::Output
   config_param :from, :string, :default => 'localhost@localdomain'
   config_param :to, :string, :default => ''
   config_param :subject, :string, :default => 'Fluent::MailOutput plugin'
+  config_param :subject_out_keys, :string, :default => ""
   config_param :enable_starttls_auto, :bool, :default => false
 
   def initialize
@@ -28,6 +29,7 @@ class Fluent::MailOutput < Fluent::Output
 
     @out_keys = @out_keys.split(',')
     @message_out_keys = @message_out_keys.split(',')
+    @subject_out_keys = @subject_out_keys.split(',')
 
     if @out_keys.empty? and @message.nil?
       raise Fluent::ConfigError, "Either 'message' or 'out_keys' must be specifed."
@@ -37,6 +39,12 @@ class Fluent::MailOutput < Fluent::Output
       @message % (['1'] * @message_out_keys.length) if @message
     rescue ArgumentError
       raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
+    end
+
+    begin
+      @subject % (['1'] * @subject_out_keys.length)
+    rescue ArgumentError
+      raise Fluent::ConfigError, "string specifier '%s' of subject and subject_out_keys specification mismatch"
     end
 
     if @time_key
@@ -61,17 +69,23 @@ class Fluent::MailOutput < Fluent::Output
 
   def emit(tag, es, chain)
     messages = []
+    subjects = []
 
     es.each {|time,record|
-      messages << create_key_value_message(tag, time, record) if @out_keys
-      messages << create_formatted_message(tag, time, record) if @message
+      if @message
+        messages << create_formatted_message(tag, time, record)
+      else
+        messages << create_key_value_message(tag, time, record)
+      end
+      subjects << create_formatted_subject(tag, time, record)
     }
 
-    messages.each do |msg|
+    messages.each_with_index do |msg, i|
+      subject = subjects[i]
       begin
-        res = sendmail(msg)
+        res = sendmail(subject, msg)
       rescue
-        $log.warn "out_mail: failed to send notice to #{@host}:#{@port}, message: #{msg}"
+        $log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
       end
     end
 
@@ -116,7 +130,24 @@ class Fluent::MailOutput < Fluent::Output
     (@message % values).gsub(/\\n/, "\n")
   end
 
-  def sendmail(msg)
+  def create_formatted_subject(tag, time, record)
+    values = []
+
+    values = @subject_out_keys.map do |key|
+      case key
+      when @time_key
+        @time_format_proc.call(time)
+      when @tag_key
+        tag
+      else
+        record[key].to_s
+      end
+    end
+
+    @subject % values
+  end
+
+  def sendmail(subject, msg)
     smtp = Net::SMTP.new(@host, @port)
 
     if @user and @password
@@ -127,7 +158,7 @@ class Fluent::MailOutput < Fluent::Output
       smtp.start
     end
 
-    subject = @subject.force_encoding('binary')
+    subject = subject.force_encoding('binary')
     body = msg.force_encoding('binary')
 
     smtp.send_mail(<<EOS, @from, @to.split(/,/))

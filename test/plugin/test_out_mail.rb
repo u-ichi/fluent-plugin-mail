@@ -7,7 +7,8 @@ class MailOutputTest < Test::Unit::TestCase
     time_key time
     time_format %Y/%m/%d %H:%M:%S
     tag_key tag
-    subject Fluentd Notification Alerm
+    subject Fluentd Notification Alarm %s
+    subject_out_keys tag
     host localhost
     port 25
     from localhost@localdomain
@@ -20,7 +21,8 @@ class MailOutputTest < Test::Unit::TestCase
     time_key time
     time_format %Y/%m/%d %H:%M:%S
     tag_key tag
-    subject Fluentd Notification Alerm
+    subject Fluentd Notification Alarm %s
+    subject_out_keys tag
     host localhost
     port 25
     from localhost@localdomain
