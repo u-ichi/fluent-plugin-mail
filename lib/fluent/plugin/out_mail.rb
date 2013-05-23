@@ -14,6 +14,8 @@ class Fluent::MailOutput < Fluent::Output
   config_param :password, :string, :default => nil
   config_param :from, :string, :default => 'localhost@localdomain'
   config_param :to, :string, :default => ''
+  config_param :cc, :string, :default => ''
+  config_param :bcc, :string, :default => ''
   config_param :subject, :string, :default => 'Fluent::MailOutput plugin'
   config_param :subject_out_keys, :string, :default => ""
   config_param :enable_starttls_auto, :bool, :default => false
@@ -161,10 +163,12 @@ class Fluent::MailOutput < Fluent::Output
     subject = subject.force_encoding('binary')
     body = msg.force_encoding('binary')
 
-    smtp.send_mail(<<EOS, @from, @to.split(/,/))
+    smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
 Date: #{Time::now.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
+Cc: #{@cc}
+Bcc: #{@bcc}
 Subject: #{subject}
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
