@@ -126,7 +126,7 @@ configure td-agent.conf for single node
       from SOURCE_MAIL_ADDRESS
       to DESTINATION_MAIL_ADDRESS
       subject SUBJECT
-      outkeys target_tag, pattern, value, message_time
+      out_keys target_tag, pattern, value, message_time
     </match>
 
 
