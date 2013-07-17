@@ -162,9 +162,10 @@ class Fluent::MailOutput < Fluent::Output
 
     subject = subject.force_encoding('binary')
     body = msg.force_encoding('binary')
+    converted_time = Time.now.utc
 
     smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
-Date: #{Time::now.strftime("%a, %d %b %Y %X %z")}
+Date: #{converted_time.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
 Cc: #{@cc}
