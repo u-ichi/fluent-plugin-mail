@@ -164,7 +164,7 @@ class Fluent::MailOutput < Fluent::Output
     body = msg.force_encoding('binary')
 
     smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
-Date: #{Time::now.strftime("%a, %d %b %Y %X %z")}
+Date: #{Time::now.utc.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
 Cc: #{@cc}
