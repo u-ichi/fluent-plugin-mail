@@ -82,6 +82,7 @@ Email is sent like
       password PASSWORD
       enable_starttls_auto true
       out_keys target_tag,pattern,value
+      time_locale UTC # optional
     </match>
 
 
@@ -189,6 +190,7 @@ log server("/etc/td-agent/td-agent.conf")
       to DESTINATION_MAIL_ADDRESS
       subject SUBJECT
       outkeys target_tag, pattern, value
+      time_locale UTC # optional
     </match>
 
 
