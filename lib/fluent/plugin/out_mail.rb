@@ -19,6 +19,7 @@ class Fluent::MailOutput < Fluent::Output
   config_param :subject, :string, :default => 'Fluent::MailOutput plugin'
   config_param :subject_out_keys, :string, :default => ""
   config_param :enable_starttls_auto, :bool, :default => false
+  config_param :time_locale, :default => nil
 
   def initialize
     super
@@ -163,8 +164,14 @@ class Fluent::MailOutput < Fluent::Output
     subject = subject.force_encoding('binary')
     body = msg.force_encoding('binary')
 
+    if time_locale
+      date = Time::now.timezone(time_locale)
+    else
+      date = Time::now
+    end
+
     smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
-Date: #{Time::now.strftime("%a, %d %b %Y %X %z")}
+Date: #{date.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
 Cc: #{@cc}
@@ -179,4 +186,16 @@ EOS
   end
 
 end
+
+class Time
+  def timezone(timezone = 'UTC')
+    old = ENV['TZ']
+    utc = self.dup.utc
+    ENV['TZ'] = timezone
+    output = utc.localtime
+    ENV['TZ'] = old
+    output
+  end
+end
+
 

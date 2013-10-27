@@ -27,6 +27,7 @@ Or use td-agent : (on Ubuntu12.04)
       subject SUBJECT: %s
       subject_out_keys target_tag
       out_keys target_tag,pattern,value
+      time_locale UTC # optional
     </match>
 
 Email is sent like
@@ -55,6 +56,7 @@ You may use `message` parameter to define mail format as you like. Use `\n` to p
       subject_out_keys target_tag
       message %s %s\n%s
       message_out_keys target_tag,pattern,value
+      time_locale UTC # optional
     </match>
 
 Email is sent like
@@ -82,6 +84,7 @@ Email is sent like
       password PASSWORD
       enable_starttls_auto true
       out_keys target_tag,pattern,value
+      time_locale UTC # optional
     </match>
 
 
@@ -189,6 +192,7 @@ log server("/etc/td-agent/td-agent.conf")
       to DESTINATION_MAIL_ADDRESS
       subject SUBJECT
       outkeys target_tag, pattern, value
+      time_locale UTC # optional
     </match>
 
 
