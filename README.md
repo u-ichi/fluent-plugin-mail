@@ -1,4 +1,4 @@
-# Fluent::Plugin::Mail
+# Fluent::Plugin::Mail, a plugin for [Fluentd](http://fluentd.org)
 
 
 ## Installation
