@@ -1,6 +1,11 @@
 class Fluent::MailOutput < Fluent::Output
   Fluent::Plugin.register_output('mail', self)
 
+  # Define `log` method for v0.10.42 or earlier
+  unless method_defined?(:log)
+    define_method("log") { $log }
+  end
+
   config_param :out_keys, :string, :default => ""
   config_param :message, :string, :default => nil
   config_param :message_out_keys, :string, :default => ""
@@ -88,7 +93,7 @@ class Fluent::MailOutput < Fluent::Output
       begin
         res = sendmail(subject, msg)
       rescue
-        $log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
+        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
       end
     end
 
