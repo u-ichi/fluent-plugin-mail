@@ -70,7 +70,7 @@ Email is sent like
     #{target_tag} #{pattern}
     #{value}
 
-## Mail Configuration for Gmail(use TLS)
+## Mail Configuration for Gmail(use STARTTLS)
 
     <match **>
       type mail
@@ -83,6 +83,7 @@ Email is sent like
       user USERNAME( ex. hoge@gmail.com)
       password PASSWORD
       enable_starttls_auto true
+      enable_tls false
       out_keys target_tag,pattern,value
       time_locale UTC # optional
     </match>
@@ -207,4 +208,3 @@ log server("/etc/td-agent/td-agent.conf")
   * Copyright (c) 2012- Yuichi UEMURA
   * License
     * Apache License, Version 2.0
-

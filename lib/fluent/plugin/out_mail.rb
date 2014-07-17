@@ -24,6 +24,7 @@ class Fluent::MailOutput < Fluent::Output
   config_param :subject, :string, :default => 'Fluent::MailOutput plugin'
   config_param :subject_out_keys, :string, :default => ""
   config_param :enable_starttls_auto, :bool, :default => false
+  config_param :enable_tls, :bool, :default => false
   config_param :time_locale, :default => nil
 
   def initialize
@@ -161,6 +162,7 @@ class Fluent::MailOutput < Fluent::Output
     if @user and @password
       smtp_auth_option = [@domain, @user, @password, :plain]
       smtp.enable_starttls if @enable_starttls_auto
+      smtp.enable_tls if @enable_tls
       smtp.start(@domain,@user,@password,:plain)
     else
       smtp.start
@@ -202,5 +204,3 @@ class Time
     output
   end
 end
-
-
