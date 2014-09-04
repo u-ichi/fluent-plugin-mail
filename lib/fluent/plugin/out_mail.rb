@@ -25,6 +25,7 @@ class Fluent::MailOutput < Fluent::Output
   config_param :subject_out_keys, :string, :default => ""
   config_param :enable_starttls_auto, :bool, :default => false
   config_param :time_locale, :default => nil
+  config_param :debug_mode, :bool, :default => false
 
   def initialize
     super
@@ -93,7 +94,11 @@ class Fluent::MailOutput < Fluent::Output
       begin
         res = sendmail(subject, msg)
       rescue
-        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
+        if @debug_mode
+          log.warn "out_mail: failed to send email to #{@host}:#{@port}, subject: #{subject}, message: #{msg}, error: #{!}" 
+        else
+          log.warn "out_mail: failed to send email to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
+        end
       end
     end
 
@@ -175,7 +180,7 @@ class Fluent::MailOutput < Fluent::Output
       date = Time::now
     end
 
-    smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
+    debug_msg = smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
 Date: #{date.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
@@ -187,6 +192,8 @@ Content-Type: text/plain; charset=utf-8
 
 #{body}
 EOS
+    log.info "out_mail: email sent respond msg: #{debug_msg}" if @debug_mode
+
     smtp.finish
   end
 
