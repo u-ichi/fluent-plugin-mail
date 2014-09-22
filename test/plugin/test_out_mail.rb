@@ -1,6 +1,9 @@
 require 'helper'
 
 class MailOutputTest < Test::Unit::TestCase
+  def setup
+    Fluent::Test.setup
+  end
 
   CONFIG_OUT_KEYS = %[
     out_keys tag,time,value
