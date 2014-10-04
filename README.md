@@ -42,6 +42,35 @@ Email is sent like
     pattern: #{pattern}
     value: #{value}
 
+## Mail Configuration with message_out_record
+
+    <match **>
+      type mail
+      host SMTPSERVER
+      port 25
+      from SOURCE
+      to DEST1,DEST2,DEST3
+      subject SUBJECT: %s
+      subject_out_keys target_tag
+      message MESSAGE BODY: %s
+      message_out_record true
+      message_size_limit -1 #no limit
+      time_locale UTC # optional
+      reply_to sample@example.com
+      return_path sample@example.com
+      auth_type cram_md5
+    </match>
+
+Email is sent like
+
+    From: SOURCE
+    To: DEST1,DEST2,DEST3
+    Subject: SUBJECT: #{target_tag}
+    Mime-Version: 1.0
+    Content-Type: text/plain; charset=utf-8
+
+    MESSAGE BODY: #{log record}
+
 ## Mail Configuration with Message Format (no auth)
 
 You may use `message` parameter to define mail format as you like. Use `\n` to put a return code.

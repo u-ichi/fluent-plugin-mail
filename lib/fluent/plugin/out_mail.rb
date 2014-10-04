@@ -9,6 +9,8 @@ class Fluent::MailOutput < Fluent::Output
   config_param :out_keys, :string, :default => ""
   config_param :message, :string, :default => nil
   config_param :message_out_keys, :string, :default => ""
+  config_param :message_out_record, :bool, :default => false
+  config_param :message_size_limit, :integer, :default => 4096
   config_param :time_key, :string, :default => nil
   config_param :time_format, :string, :default => nil
   config_param :tag_key, :string, :default => 'tag'
@@ -25,6 +27,9 @@ class Fluent::MailOutput < Fluent::Output
   config_param :subject_out_keys, :string, :default => ""
   config_param :enable_starttls_auto, :bool, :default => false
   config_param :time_locale, :default => nil
+  config_param :reply_to, :default => @from
+  config_param :return_path, :default => @from
+  config_param :auth_type, :default => 'plain'
 
   def initialize
     super
@@ -44,8 +49,14 @@ class Fluent::MailOutput < Fluent::Output
     end
 
     begin
-      @message % (['1'] * @message_out_keys.length) if @message
+      @message % (['1'] * @message_out_keys.length) if @message and !@message_out_record
     rescue ArgumentError
+      raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
+    end
+
+    begin
+      @message % ["1"] if @message and @message_out_record
+    rescue
       raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
     end
 
@@ -92,7 +103,8 @@ class Fluent::MailOutput < Fluent::Output
       subject = subjects[i]
       begin
         res = sendmail(subject, msg)
-      rescue
+      rescue => e
+        log.debug "#{e.message}\n#{e.backtrace.join('\n')}"
         log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
       end
     end
@@ -124,18 +136,23 @@ class Fluent::MailOutput < Fluent::Output
   def create_formatted_message(tag, time, record)
     values = []
 
-    values = @message_out_keys.map do |key|
-      case key
-      when @time_key
-        @time_format_proc.call(time)
-      when @tag_key
-        tag
-      else
-        record[key].to_s
+    unless message_out_record
+      values = @message_out_keys.map do |key|
+        case key
+        when @time_key
+          @time_format_proc.call(time)
+        when @tag_key
+          tag
+        else
+          record[key].to_s
+        end
       end
+    else
+      values = record.to_s.byteslice(0..@message_size_limit)
     end
 
     (@message % values).gsub(/\\n/, "\n")
+
   end
 
   def create_formatted_subject(tag, time, record)
@@ -161,7 +178,7 @@ class Fluent::MailOutput < Fluent::Output
     if @user and @password
       smtp_auth_option = [@domain, @user, @password, :plain]
       smtp.enable_starttls if @enable_starttls_auto
-      smtp.start(@domain,@user,@password,:plain)
+      smtp.start(@domain,@user,@password, @auth_type.to_sym)
     else
       smtp.start
     end
@@ -174,8 +191,7 @@ class Fluent::MailOutput < Fluent::Output
     else
       date = Time::now
     end
-
-    smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
+    smtp.send_mail(<<EOS, @return_path, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
 Date: #{date.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
@@ -184,6 +200,7 @@ Bcc: #{@bcc}
 Subject: #{subject}
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
+Reply-To: #{@reply_to}
 
 #{body}
 EOS
