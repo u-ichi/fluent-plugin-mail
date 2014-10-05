@@ -93,8 +93,8 @@ class Fluent::MailOutput < Fluent::Output
       subject = subjects[i]
       begin
         res = sendmail(subject, msg)
-      rescue
-        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
+      rescue => e
+        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}, error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
       end
     end
 
@@ -177,7 +177,7 @@ class Fluent::MailOutput < Fluent::Output
       date = Time::now
     end
 
-    smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
+    debug_msg = smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
 Date: #{date.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
@@ -189,6 +189,7 @@ Content-Type: text/plain; charset=utf-8
 
 #{body}
 EOS
+    log.debug "out_mail: email send response: #{debug_msg}"
     smtp.finish
   end
 
