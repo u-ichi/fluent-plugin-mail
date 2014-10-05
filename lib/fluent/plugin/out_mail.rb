@@ -93,9 +93,8 @@ class Fluent::MailOutput < Fluent::Output
       subject = subjects[i]
       begin
         res = sendmail(subject, msg)
-      rescue
-        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}"
-        log.debug "out_mail: failed to send email due to error: #{!}"
+      rescue => e
+        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}, error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
       end
     end
 
