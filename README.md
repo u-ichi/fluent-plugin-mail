@@ -202,9 +202,14 @@ log server("/etc/td-agent/td-agent.conf")
 
 * add config "mail_text_format"
 
+## ChangeLog
+
+See [CHANGELOG.md](CHANGELOG.md) for more details.
+
 ## Copyright
 
 * Copyright
   * Copyright (c) 2012- Yuichi UEMURA
+  * Copyright (c) 2014- Naotoshi Seo
   * License
     * Apache License, Version 2.0
