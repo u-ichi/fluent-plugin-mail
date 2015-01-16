@@ -1,3 +1,9 @@
+# 0.1.1
+
+Enhancement:
+
+* Avoid invalid byte seuqnce in UTF-8 error
+
 # 0.1.0
 
 Enhancement:
