@@ -75,5 +75,13 @@ class MailOutputTest < Test::Unit::TestCase
     end
   end
 
+  def test_with_scrub
+    d = create_driver(CONFIG_MESSAGE)
+    invalid_string = "\xff".force_encoding('UTF-8')
+    assert_nothing_raised {
+      res = d.instance.with_scrub(invalid_string) {|str| str.gsub(/\\n/, "\n") }
+      assert_equal '?', res
+    }
+  end
 end
 

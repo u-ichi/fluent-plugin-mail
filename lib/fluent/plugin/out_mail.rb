@@ -31,6 +31,7 @@ class Fluent::MailOutput < Fluent::Output
     super
     require 'net/smtp'
     require 'kconv'
+    require 'string/scrub' if RUBY_VERSION.to_f < 2.1
   end
 
   def configure(conf)
@@ -136,7 +137,19 @@ class Fluent::MailOutput < Fluent::Output
       end
     end
 
-    (@message % values).gsub(/\\n/, "\n")
+    message = (@message % values)
+    with_scrub(message) {|str| str.sub(/\\n/, "\n") }
+  end
+
+  def with_scrub(string)
+    begin
+      return yield(string)
+    rescue ArgumentError => e
+      raise e unless e.message.index("invalid byte sequence in") == 0
+      log.info "out_mail: invalid byte sequence is replaced in #{string}"
+      string.scrub!('?')
+      retry
+    end
   end
 
   def create_formatted_subject(tag, time, record)
