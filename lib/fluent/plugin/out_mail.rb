@@ -138,7 +138,7 @@ class Fluent::MailOutput < Fluent::Output
     end
 
     message = (@message % values)
-    with_scrub(message) {|str| str.sub(/\\n/, "\n") }
+    with_scrub(message) {|str| str.gsub(/\\n/, "\n") }
   end
 
   def with_scrub(string)
