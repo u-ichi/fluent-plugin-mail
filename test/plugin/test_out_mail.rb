@@ -47,7 +47,7 @@ class MailOutputTest < Test::Unit::TestCase
   ]
 
   def create_driver(conf=CONFIG_OUT_KEYS,tag='test')
-    Fluent::Test::OutputTestDriver.new(Fluent::MailOutput, tag).configure(conf)
+    Fluent::Test::BufferedOutputTestDriver.new(Fluent::MailOutput, tag).configure(conf)
   end
 
   def test_configure
@@ -83,5 +83,10 @@ class MailOutputTest < Test::Unit::TestCase
       assert_equal '?', res
     }
   end
-end
 
+  def test_squash_messages
+    d = create_driver(CONFIG_MESSAGE)
+    res = d.instance.squash_messages([1,2])
+    assert_equal ["1\n2"], res
+  end
+end

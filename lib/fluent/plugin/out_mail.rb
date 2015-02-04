@@ -1,4 +1,4 @@
-class Fluent::MailOutput < Fluent::Output
+class Fluent::MailOutput < Fluent::BufferedOutput
   Fluent::Plugin.register_output('mail', self)
 
   # Define `log` method for v0.10.42 or earlier
@@ -26,6 +26,8 @@ class Fluent::MailOutput < Fluent::Output
   config_param :enable_starttls_auto, :bool, :default => false
   config_param :enable_tls, :bool, :default => false
   config_param :time_locale, :default => nil
+  config_param :squash, :bool, :default => false
+  config_set_default :buffer_chunk_limit, 1012*1024  # overwrite default buffer_chunk_limit                                                                                         
 
   def initialize
     super
@@ -77,11 +79,11 @@ class Fluent::MailOutput < Fluent::Output
   def shutdown
   end
 
-  def emit(tag, es, chain)
+  def write(chunk)
     messages = []
     subjects = []
 
-    es.each {|time,record|
+    chunk.msgpack_each {|tag,time,record|
       if @message
         messages << create_formatted_message(tag, time, record)
       else
@@ -89,6 +91,10 @@ class Fluent::MailOutput < Fluent::Output
       end
       subjects << create_formatted_subject(tag, time, record)
     }
+
+    if @squash
+      messages = squash_messages(messages)
+    end
 
     messages.each_with_index do |msg, i|
       subject = subjects[i]
@@ -99,11 +105,14 @@ class Fluent::MailOutput < Fluent::Output
       end
     end
 
-    chain.next
+  end
+
+  def squash_messages(messages)
+    [messages.join("\n")]
   end
 
   def format(tag, time, record)
-    "#{Time.at(time).strftime('%Y/%m/%d %H:%M:%S')}\t#{tag}\t#{record.to_json}\n"
+    [tag, time, record].to_msgpack
   end
 
   def create_key_value_message(tag, time, record)
