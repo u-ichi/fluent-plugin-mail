@@ -25,22 +25,26 @@ Or use td-agent : (on Ubuntu12.04)
       from SOURCE
       to DEST1,DEST2,DEST3
       subject SUBJECT: %s
-      subject_out_keys target_tag
-      out_keys target_tag,pattern,value
+      subject_out_keys tag
+      out_keys tag,foo,message
       time_locale UTC # optional
     </match>
+
+Assume following input:
+
+    tag.example: {"foo":"bar","message":"awesome!"}
 
 Email is sent like
 
     From: SOURCE
     To: DEST1,DEST2,DEST3
-    Subject: SUBJECT: #{target_tag}
+    Subject: SUBJECT: tag.example
     Mime-Version: 1.0
     Content-Type: text/plain; charset=utf-8
 
-    target_tag: #{target_tag}
-    pattern: #{pattern}
-    value: #{value}
+    tag: tag.example
+    foo: bar
+    message: awesome!
 
 ## Mail Configuration with Message Format (no auth)
 
@@ -53,22 +57,26 @@ You may use `message` parameter to define mail format as you like. Use `\n` to p
       from SOURCE
       to DEST1,DEST2,DEST3
       subject SUBJECT: %s
-      subject_out_keys target_tag
-      message %s %s\n%s
-      message_out_keys target_tag,pattern,value
+      subject_out_keys tag
+      message %s\n%s %s
+      message_out_keys tag,foo,message
       time_locale UTC # optional
     </match>
+
+Assume following input:
+
+    tag.example: {"foo":"bar","message":"awesome!"}
 
 Email is sent like
 
     From: SOURCE
     To: DEST1,DEST2,DEST3
-    Subject: SUBJECT: #{target_tag}
+    Subject: SUBJECT: tag.example
     Mime-Version: 1.0
     Content-Type: text/plain; charset=utf-8
 
-    #{target_tag} #{pattern}
-    #{value}
+    tag.example
+    bar awesome!
 
 ## Mail Configuration for Gmail(use STARTTLS)
 
@@ -84,10 +92,9 @@ Email is sent like
       password PASSWORD
       enable_starttls_auto true
       enable_tls false
-      out_keys target_tag,pattern,value
+      out_keys tag,foo,message
       time_locale UTC # optional
     </match>
-
 
 
 ## Usage Sample
@@ -139,8 +146,6 @@ configure td-agent.conf for single node
 use config_expander(https://github.com/tagomoris/fluent-plugin-config-expander)
 
     $ gem install fluent-plugin-config-expander
-
-
 
 source node("/etc/td-agent/td-agent.conf")
 
