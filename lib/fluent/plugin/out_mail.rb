@@ -184,8 +184,8 @@ class Fluent::MailOutput < Fluent::Output
     subject = subject.force_encoding('binary')
     body = msg.force_encoding('binary')
 
-    if time_locale
-      date = Time::now.timezone(time_locale)
+    if @time_locale
+      date = Time::now.timezone(@time_locale)
     else
       date = Time::now
     end
