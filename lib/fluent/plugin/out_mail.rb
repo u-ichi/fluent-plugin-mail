@@ -1,3 +1,5 @@
+require 'securerandom'
+
 class Fluent::MailOutput < Fluent::Output
   Fluent::Plugin.register_output('mail', self)
 
@@ -190,6 +192,8 @@ class Fluent::MailOutput < Fluent::Output
       date = Time::now
     end
 
+    mid = sprintf("<%s@%s>", SecureRandom.uuid, SecureRandom.uuid)
+
     debug_msg = smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
 Date: #{date.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
@@ -197,6 +201,7 @@ To: #{@to}
 Cc: #{@cc}
 Bcc: #{@bcc}
 Subject: #{subject}
+Message-Id: #{mid}
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 
