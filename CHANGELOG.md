@@ -1,3 +1,9 @@
+# 0.1.2
+
+Enhancement:
+
+* Send mail with Message-Id header field
+
 # 0.1.1
 
 Enhancement:
