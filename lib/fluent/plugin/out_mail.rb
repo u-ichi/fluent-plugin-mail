@@ -186,15 +186,17 @@ class Fluent::MailOutput < Fluent::Output
     subject = subject.force_encoding('binary')
     body = msg.force_encoding('binary')
 
+    # Date: header has timezone, so usually it is not necessary to set locale explicitly
+    # But, for people who would see mail header text directly, the locale information may help something
+    # (for example, they can tell the sender should live in Tokyo if +0900)
     if time_locale
       date = Time::now.timezone(time_locale)
     else
-      date = Time::now
+      date = Time::now # localtime
     end
 
     mid = sprintf("<%s@%s>", SecureRandom.uuid, SecureRandom.uuid)
-
-    debug_msg = smtp.send_mail(<<EOS, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
+    content = <<EOF
 Date: #{date.strftime("%a, %d %b %Y %X %z")}
 From: #{@from}
 To: #{@to}
@@ -206,8 +208,10 @@ Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 
 #{body}
-EOS
-    log.debug "out_mail: email send response: #{debug_msg}"
+EOF
+    response = smtp.send_mail(content, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
+    log.debug "out_mail: content: #{content.gsub("\n", "\\n")}"
+    log.debug "out_mail: email send response: #{response.string.chomp}"
     smtp.finish
   end
 
