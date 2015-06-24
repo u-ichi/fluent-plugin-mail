@@ -211,6 +211,28 @@ log server("/etc/td-agent/td-agent.conf")
 
 See [CHANGELOG.md](CHANGELOG.md) for more details.
 
+## Development
+
+Run mail server as:
+
+```
+$ bundle exec mailcactcher
+```
+
+It starts STMP server on localhost:1025, and has Web UI running on localhost:1080.
+
+Run Fluentd as:
+
+```
+$ bundle exec fluentd -c example.conf
+```
+
+Put a message to the Fluentd as:
+
+```
+$ echo '{"message":"This is a test"}' | bundle exec fluent-cat mail.test
+```
+
 ## Copyright
 
 * Copyright
