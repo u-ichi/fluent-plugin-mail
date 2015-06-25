@@ -47,10 +47,16 @@ class Fluent::MailOutput < Fluent::Output
       raise Fluent::ConfigError, "Either 'message' or 'out_keys' must be specifed."
     end
 
-    begin
-      @message % (['1'] * @message_out_keys.length) if @message
-    rescue ArgumentError
-      raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
+    if @message
+      begin
+        @message % (['1'] * @message_out_keys.length)
+      rescue ArgumentError
+        raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
+      end
+      @create_message_proc = Proc.new {|tag, time, record| create_formatted_message(tag, time, record) }
+    else
+      # The default uses the old `key=value` format for old version compatibility
+      @create_message_proc = Proc.new {|tag, time, record| create_key_value_message(tag, time, record) }
     end
 
     begin
@@ -61,9 +67,7 @@ class Fluent::MailOutput < Fluent::Output
 
     if @time_key
       if @time_format
-        f = @time_format
-        tf = Fluent::TimeFormatter.new(f, @localtime)
-        @time_format_proc = tf.method(:format)
+        @time_format_proc = Fluent::TimeFormatter.new(@time_format, @localtime).method(:format)
       else
         @time_format_proc = Proc.new {|time| time.to_s }
       end
@@ -81,41 +85,36 @@ class Fluent::MailOutput < Fluent::Output
     subjects = []
 
     es.each {|time,record|
-      if @message
-        messages << create_formatted_message(tag, time, record)
-      else
-        messages << create_key_value_message(tag, time, record)
-      end
+      messages << @create_message_proc.call(tag, time, record)
       subjects << create_formatted_subject(tag, time, record)
     }
 
-    messages.each_with_index do |msg, i|
+    (0...messages.size).each do |i|
+      message = messages[i]
       subject = subjects[i]
       begin
-        res = sendmail(subject, msg)
+        sendmail(subject, message)
       rescue => e
-        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}, error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
+        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{message}, " <<
+          "error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
       end
     end
 
     chain.next
   end
 
-  def format(tag, time, record)
-    "#{Time.at(time).strftime('%Y/%m/%d %H:%M:%S')}\t#{tag}\t#{record.to_json}\n"
-  end
-
+  # The old `key=value` format for old version compatibility
   def create_key_value_message(tag, time, record)
     values = []
 
-    @out_keys.each do |key|
+    values << @out_keys.each do |key|
       case key
       when @time_key
-        values << @time_format_proc.call(time)
+        @time_format_proc.call(time)
       when @tag_key
-        values << tag
+        tag
       else
-        values << "#{key}: #{record[key].to_s}"
+        "#{key}: #{record[key].to_s}"
       end
     end
 
@@ -138,17 +137,6 @@ class Fluent::MailOutput < Fluent::Output
 
     message = (@message % values)
     with_scrub(message) {|str| str.gsub(/\\n/, "\n") }
-  end
-
-  def with_scrub(string)
-    begin
-      return yield(string)
-    rescue ArgumentError => e
-      raise e unless e.message.index("invalid byte sequence in") == 0
-      log.info "out_mail: invalid byte sequence is replaced in #{string}"
-      string.scrub!('?')
-      retry
-    end
   end
 
   def create_formatted_subject(tag, time, record)
@@ -217,5 +205,16 @@ EOF
     yield
   ensure
     ENV['TZ'] = oldtz
+  end
+
+  def with_scrub(string)
+    begin
+      return yield(string)
+    rescue ArgumentError => e
+      raise e unless e.message.index("invalid byte sequence in") == 0
+      log.info "out_mail: invalid byte sequence is replaced in #{string}"
+      string.scrub!('?')
+      retry
+    end
   end
 end
