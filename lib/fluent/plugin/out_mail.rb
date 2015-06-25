@@ -12,7 +12,6 @@ class Fluent::MailOutput < Fluent::Output
   config_param :message,              :string,  :default => nil
   config_param :message_out_keys,     :string,  :default => ""
   config_param :time_key,             :string,  :default => nil
-  config_param :time_format,          :string,  :default => nil
   config_param :tag_key,              :string,  :default => 'tag'
   config_param :host,                 :string
   config_param :port,                 :integer, :default => 25
@@ -27,6 +26,8 @@ class Fluent::MailOutput < Fluent::Output
   config_param :subject_out_keys,     :string,  :default => ""
   config_param :enable_starttls_auto, :bool,    :default => false
   config_param :enable_tls,           :bool,    :default => false
+  config_param :time_format,          :string,  :default => "%F %T %z"
+  config_param :localtime,            :bool,    :default => true
   config_param :time_locale,                    :default => nil
 
   def initialize
@@ -63,14 +64,6 @@ class Fluent::MailOutput < Fluent::Output
       @subject % (['1'] * @subject_out_keys.length)
     rescue ArgumentError
       raise Fluent::ConfigError, "string specifier '%s' of subject and subject_out_keys specification mismatch"
-    end
-
-    if @time_key
-      if @time_format
-        @time_format_proc = Fluent::TimeFormatter.new(@time_format, @localtime).method(:format)
-      else
-        @time_format_proc = Proc.new {|time| time.to_s }
-      end
     end
   end
 
@@ -110,7 +103,7 @@ class Fluent::MailOutput < Fluent::Output
     values << @out_keys.each do |key|
       case key
       when @time_key
-        @time_format_proc.call(time)
+        format_time(time, @time_format)
       when @tag_key
         tag
       else
@@ -127,7 +120,7 @@ class Fluent::MailOutput < Fluent::Output
     values = @message_out_keys.map do |key|
       case key
       when @time_key
-        @time_format_proc.call(time)
+        format_time(time, @time_format)
       when @tag_key
         tag
       else
@@ -145,7 +138,7 @@ class Fluent::MailOutput < Fluent::Output
     values = @subject_out_keys.map do |key|
       case key
       when @time_key
-        @time_format_proc.call(time)
+        format_time(time, @time_format)
       when @tag_key
         tag
       else
@@ -174,15 +167,11 @@ class Fluent::MailOutput < Fluent::Output
     # Date: header has timezone, so usually it is not necessary to set locale explicitly
     # But, for people who would see mail header text directly, the locale information may help something
     # (for example, they can tell the sender should live in Tokyo if +0900)
-    if time_locale
-      date = with_timezone(time_locale) { Time.now }
-    else
-      date = Time.now # localtime
-    end
+    date = format_time(Time.now, "%a, %d %b %Y %X %z")
 
     mid = sprintf("<%s@%s>", SecureRandom.uuid, SecureRandom.uuid)
     content = <<EOF
-Date: #{date.strftime("%a, %d %b %Y %X %z")}
+Date: #{date}
 From: #{@from}
 To: #{@to}
 Cc: #{@cc}
@@ -198,6 +187,15 @@ EOF
     log.debug "out_mail: content: #{content.gsub("\n", "\\n")}"
     log.debug "out_mail: email send response: #{response.string.chomp}"
     smtp.finish
+  end
+
+  def format_time(time, time_format)
+    # Fluentd >= v0.12's TimeFormatter supports timezone, but v0.10 does not
+    if @time_locale
+      with_timezone(@time_locale) { Fluent::TimeFormatter.new(time_format, @localtime).format(time) }
+    else
+      Fluent::TimeFormatter.new(time_format, @localtime).format(time)
+    end
   end
 
   def with_timezone(tz)
