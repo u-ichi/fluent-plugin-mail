@@ -64,10 +64,8 @@ class Fluent::MailOutput < Fluent::Output
         f = @time_format
         tf = Fluent::TimeFormatter.new(f, @localtime)
         @time_format_proc = tf.method(:format)
-        @time_parse_proc = Proc.new {|str| Time.strptime(str, f).to_i }
       else
         @time_format_proc = Proc.new {|time| time.to_s }
-        @time_parse_proc = Proc.new {|str| str.to_i }
       end
     end
   end
