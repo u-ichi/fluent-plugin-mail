@@ -8,26 +8,26 @@ class Fluent::MailOutput < Fluent::Output
     define_method("log") { $log }
   end
 
-  config_param :out_keys, :string, :default => ""
-  config_param :message, :string, :default => nil
-  config_param :message_out_keys, :string, :default => ""
-  config_param :time_key, :string, :default => nil
-  config_param :time_format, :string, :default => nil
-  config_param :tag_key, :string, :default => 'tag'
-  config_param :host, :string
-  config_param :port, :integer, :default => 25
-  config_param :domain, :string, :default => 'localdomain'
-  config_param :user, :string, :default => nil
-  config_param :password, :string, :default => nil
-  config_param :from, :string, :default => 'localhost@localdomain'
-  config_param :to, :string, :default => ''
-  config_param :cc, :string, :default => ''
-  config_param :bcc, :string, :default => ''
-  config_param :subject, :string, :default => 'Fluent::MailOutput plugin'
-  config_param :subject_out_keys, :string, :default => ""
-  config_param :enable_starttls_auto, :bool, :default => false
-  config_param :enable_tls, :bool, :default => false
-  config_param :time_locale, :default => nil
+  config_param :out_keys,             :string,  :default => ""
+  config_param :message,              :string,  :default => nil
+  config_param :message_out_keys,     :string,  :default => ""
+  config_param :time_key,             :string,  :default => nil
+  config_param :time_format,          :string,  :default => nil
+  config_param :tag_key,              :string,  :default => 'tag'
+  config_param :host,                 :string
+  config_param :port,                 :integer, :default => 25
+  config_param :domain,               :string,  :default => 'localdomain'
+  config_param :user,                 :string,  :default => nil
+  config_param :password,             :string,  :default => nil
+  config_param :from,                 :string,  :default => 'localhost@localdomain'
+  config_param :to,                   :string,  :default => ''
+  config_param :cc,                   :string,  :default => ''
+  config_param :bcc,                  :string,  :default => ''
+  config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
+  config_param :subject_out_keys,     :string,  :default => ""
+  config_param :enable_starttls_auto, :bool,    :default => false
+  config_param :enable_tls,           :bool,    :default => false
+  config_param :time_locale,                    :default => nil
 
   def initialize
     super
@@ -73,7 +73,6 @@ class Fluent::MailOutput < Fluent::Output
   end
 
   def start
-
   end
 
   def shutdown
