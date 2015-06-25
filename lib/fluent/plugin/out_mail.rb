@@ -190,9 +190,9 @@ class Fluent::MailOutput < Fluent::Output
     # But, for people who would see mail header text directly, the locale information may help something
     # (for example, they can tell the sender should live in Tokyo if +0900)
     if time_locale
-      date = Time::now.timezone(time_locale)
+      date = with_timezone(time_locale) { Time.now }
     else
-      date = Time::now # localtime
+      date = Time.now # localtime
     end
 
     mid = sprintf("<%s@%s>", SecureRandom.uuid, SecureRandom.uuid)
@@ -215,15 +215,10 @@ EOF
     smtp.finish
   end
 
-end
-
-class Time
-  def timezone(timezone = 'UTC')
-    old = ENV['TZ']
-    utc = self.dup.utc
-    ENV['TZ'] = timezone
-    output = utc.localtime
-    ENV['TZ'] = old
-    output
+  def with_timezone(tz)
+    oldtz, ENV['TZ'] = ENV['TZ'], tz
+    yield
+  ensure
+    ENV['TZ'] = oldtz
   end
 end
