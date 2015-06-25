@@ -213,10 +213,11 @@ See [CHANGELOG.md](CHANGELOG.md) for more details.
 
 ## Development
 
-Run mail server as:
+Run mail server using [mailcatcher](http://mailcatcher.me/) gem as:
 
 ```
-$ bundle exec mailcactcher
+$ gem install mailcatcher
+$ mailcactcher
 ```
 
 It starts STMP server on localhost:1025, and has Web UI running on localhost:1080.
