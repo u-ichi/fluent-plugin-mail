@@ -1,3 +1,17 @@
+# 0.2.0
+
+Changes:
+
+* Refactoring
+
+Fixes:
+
+* Fix so that `time_locale` option works for time field in mail body
+
+Enhancements:
+
+* Add `localtime` option
+
 # 0.1.2
 
 Enhancement:
