@@ -8,26 +8,27 @@ class Fluent::MailOutput < Fluent::Output
     define_method("log") { $log }
   end
 
-  config_param :out_keys, :string, :default => ""
-  config_param :message, :string, :default => nil
-  config_param :message_out_keys, :string, :default => ""
-  config_param :time_key, :string, :default => nil
-  config_param :time_format, :string, :default => nil
-  config_param :tag_key, :string, :default => 'tag'
-  config_param :host, :string
-  config_param :port, :integer, :default => 25
-  config_param :domain, :string, :default => 'localdomain'
-  config_param :user, :string, :default => nil
-  config_param :password, :string, :default => nil
-  config_param :from, :string, :default => 'localhost@localdomain'
-  config_param :to, :string, :default => ''
-  config_param :cc, :string, :default => ''
-  config_param :bcc, :string, :default => ''
-  config_param :subject, :string, :default => 'Fluent::MailOutput plugin'
-  config_param :subject_out_keys, :string, :default => ""
-  config_param :enable_starttls_auto, :bool, :default => false
-  config_param :enable_tls, :bool, :default => false
-  config_param :time_locale, :default => nil
+  config_param :out_keys,             :string,  :default => ""
+  config_param :message,              :string,  :default => nil
+  config_param :message_out_keys,     :string,  :default => ""
+  config_param :time_key,             :string,  :default => nil
+  config_param :tag_key,              :string,  :default => 'tag'
+  config_param :host,                 :string
+  config_param :port,                 :integer, :default => 25
+  config_param :domain,               :string,  :default => 'localdomain'
+  config_param :user,                 :string,  :default => nil
+  config_param :password,             :string,  :default => nil
+  config_param :from,                 :string,  :default => 'localhost@localdomain'
+  config_param :to,                   :string,  :default => ''
+  config_param :cc,                   :string,  :default => ''
+  config_param :bcc,                  :string,  :default => ''
+  config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
+  config_param :subject_out_keys,     :string,  :default => ""
+  config_param :enable_starttls_auto, :bool,    :default => false
+  config_param :enable_tls,           :bool,    :default => false
+  config_param :time_format,          :string,  :default => "%F %T %z"
+  config_param :localtime,            :bool,    :default => true
+  config_param :time_locale,                    :default => nil
 
   def initialize
     super
@@ -47,10 +48,16 @@ class Fluent::MailOutput < Fluent::Output
       raise Fluent::ConfigError, "Either 'message' or 'out_keys' must be specifed."
     end
 
-    begin
-      @message % (['1'] * @message_out_keys.length) if @message
-    rescue ArgumentError
-      raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
+    if @message
+      begin
+        @message % (['1'] * @message_out_keys.length)
+      rescue ArgumentError
+        raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
+      end
+      @create_message_proc = Proc.new {|tag, time, record| create_formatted_message(tag, time, record) }
+    else
+      # The default uses the old `key=value` format for old version compatibility
+      @create_message_proc = Proc.new {|tag, time, record| create_key_value_message(tag, time, record) }
     end
 
     begin
@@ -58,22 +65,9 @@ class Fluent::MailOutput < Fluent::Output
     rescue ArgumentError
       raise Fluent::ConfigError, "string specifier '%s' of subject and subject_out_keys specification mismatch"
     end
-
-    if @time_key
-      if @time_format
-        f = @time_format
-        tf = Fluent::TimeFormatter.new(f, @localtime)
-        @time_format_proc = tf.method(:format)
-        @time_parse_proc = Proc.new {|str| Time.strptime(str, f).to_i }
-      else
-        @time_format_proc = Proc.new {|time| time.to_s }
-        @time_parse_proc = Proc.new {|str| str.to_i }
-      end
-    end
   end
 
   def start
-
   end
 
   def shutdown
@@ -84,41 +78,36 @@ class Fluent::MailOutput < Fluent::Output
     subjects = []
 
     es.each {|time,record|
-      if @message
-        messages << create_formatted_message(tag, time, record)
-      else
-        messages << create_key_value_message(tag, time, record)
-      end
+      messages << @create_message_proc.call(tag, time, record)
       subjects << create_formatted_subject(tag, time, record)
     }
 
-    messages.each_with_index do |msg, i|
+    (0...messages.size).each do |i|
+      message = messages[i]
       subject = subjects[i]
       begin
-        res = sendmail(subject, msg)
+        sendmail(subject, message)
       rescue => e
-        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{msg}, error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
+        log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{message}, " <<
+          "error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
       end
     end
 
     chain.next
   end
 
-  def format(tag, time, record)
-    "#{Time.at(time).strftime('%Y/%m/%d %H:%M:%S')}\t#{tag}\t#{record.to_json}\n"
-  end
-
+  # The old `key=value` format for old version compatibility
   def create_key_value_message(tag, time, record)
     values = []
 
-    @out_keys.each do |key|
+    values << @out_keys.each do |key|
       case key
       when @time_key
-        values << @time_format_proc.call(time)
+        format_time(time, @time_format)
       when @tag_key
-        values << tag
+        tag
       else
-        values << "#{key}: #{record[key].to_s}"
+        "#{key}: #{record[key].to_s}"
       end
     end
 
@@ -131,7 +120,7 @@ class Fluent::MailOutput < Fluent::Output
     values = @message_out_keys.map do |key|
       case key
       when @time_key
-        @time_format_proc.call(time)
+        format_time(time, @time_format)
       when @tag_key
         tag
       else
@@ -143,24 +132,13 @@ class Fluent::MailOutput < Fluent::Output
     with_scrub(message) {|str| str.gsub(/\\n/, "\n") }
   end
 
-  def with_scrub(string)
-    begin
-      return yield(string)
-    rescue ArgumentError => e
-      raise e unless e.message.index("invalid byte sequence in") == 0
-      log.info "out_mail: invalid byte sequence is replaced in #{string}"
-      string.scrub!('?')
-      retry
-    end
-  end
-
   def create_formatted_subject(tag, time, record)
     values = []
 
     values = @subject_out_keys.map do |key|
       case key
       when @time_key
-        @time_format_proc.call(time)
+        format_time(time, @time_format)
       when @tag_key
         tag
       else
@@ -189,15 +167,11 @@ class Fluent::MailOutput < Fluent::Output
     # Date: header has timezone, so usually it is not necessary to set locale explicitly
     # But, for people who would see mail header text directly, the locale information may help something
     # (for example, they can tell the sender should live in Tokyo if +0900)
-    if time_locale
-      date = Time::now.timezone(time_locale)
-    else
-      date = Time::now # localtime
-    end
+    date = format_time(Time.now, "%a, %d %b %Y %X %z")
 
     mid = sprintf("<%s@%s>", SecureRandom.uuid, SecureRandom.uuid)
     content = <<EOF
-Date: #{date.strftime("%a, %d %b %Y %X %z")}
+Date: #{date}
 From: #{@from}
 To: #{@to}
 Cc: #{@cc}
@@ -215,15 +189,30 @@ EOF
     smtp.finish
   end
 
-end
+  def format_time(time, time_format)
+    # Fluentd >= v0.12's TimeFormatter supports timezone, but v0.10 does not
+    if @time_locale
+      with_timezone(@time_locale) { Fluent::TimeFormatter.new(time_format, @localtime).format(time) }
+    else
+      Fluent::TimeFormatter.new(time_format, @localtime).format(time)
+    end
+  end
 
-class Time
-  def timezone(timezone = 'UTC')
-    old = ENV['TZ']
-    utc = self.dup.utc
-    ENV['TZ'] = timezone
-    output = utc.localtime
-    ENV['TZ'] = old
-    output
+  def with_timezone(tz)
+    oldtz, ENV['TZ'] = ENV['TZ'], tz
+    yield
+  ensure
+    ENV['TZ'] = oldtz
+  end
+
+  def with_scrub(string)
+    begin
+      return yield(string)
+    rescue ArgumentError => e
+      raise e unless e.message.index("invalid byte sequence in") == 0
+      log.info "out_mail: invalid byte sequence is replaced in #{string}"
+      string.scrub!('?')
+      retry
+    end
   end
 end
