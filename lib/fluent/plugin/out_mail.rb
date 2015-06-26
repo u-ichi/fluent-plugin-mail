@@ -29,6 +29,7 @@ class Fluent::MailOutput < Fluent::Output
   config_param :time_format,          :string,  :default => "%F %T %z"
   config_param :localtime,            :bool,    :default => true
   config_param :time_locale,                    :default => nil
+  config_param :json_message,         :bool,    :default => false
 
   def initialize
     super
@@ -124,7 +125,8 @@ class Fluent::MailOutput < Fluent::Output
       when @tag_key
         tag
       else
-        record[key].to_s
+        if @json_message then Yajl.dump(record[key], { :pretty => true })
+        else record[key].to_s end
       end
     end
 
