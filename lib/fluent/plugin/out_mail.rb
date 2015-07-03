@@ -100,7 +100,7 @@ class Fluent::MailOutput < Fluent::Output
   def create_key_value_message(tag, time, record)
     values = []
 
-    values << @out_keys.each do |key|
+    values << @out_keys.map do |key|
       case key
       when @time_key
         format_time(time, @time_format)
