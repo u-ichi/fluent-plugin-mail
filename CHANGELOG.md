@@ -1,3 +1,9 @@
+# 0.2.1
+
+Fixes:
+
+* Fix `create_key_value_message` was broken because of 0.2.0 refactoring
+
 # 0.2.0
 
 Changes:
