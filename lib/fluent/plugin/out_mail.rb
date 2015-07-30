@@ -17,7 +17,7 @@ class Fluent::MailOutput < Fluent::Output
   config_param :port,                 :integer, :default => 25
   config_param :domain,               :string,  :default => 'localdomain'
   config_param :user,                 :string,  :default => nil
-  config_param :password,             :string,  :default => nil
+  config_param :password,             :string,  :default => nil, :secret => true
   config_param :from,                 :string,  :default => 'localhost@localdomain'
   config_param :to,                   :string,  :default => ''
   config_param :cc,                   :string,  :default => ''
