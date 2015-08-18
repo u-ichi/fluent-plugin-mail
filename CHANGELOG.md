@@ -1,3 +1,9 @@
+# 0.2.2
+
+Enhancements:
+
+* Support secret parameter for `password` option (thanks to cosmo0920)
+
 # 0.2.1
 
 Fixes:
