@@ -13,6 +13,7 @@ Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-mail"
   gem.require_paths = ["lib"]
   gem.version       = '0.2.2'
+  gem.license       = "Apache-2.0"
 
   gem.add_runtime_dependency "fluentd"
   gem.add_runtime_dependency "string-scrub" if RUBY_VERSION.to_f < 2.1
