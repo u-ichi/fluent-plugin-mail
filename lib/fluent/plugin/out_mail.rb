@@ -33,7 +33,6 @@ class Fluent::MailOutput < Fluent::Output
   def initialize
     super
     require 'net/smtp'
-    require 'kconv'
     require 'string/scrub' if RUBY_VERSION.to_f < 2.1
   end
 
