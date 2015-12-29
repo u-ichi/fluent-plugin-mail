@@ -7,4 +7,4 @@ gemfile:
   - Gemfile
   - Gemfile.fluentd.lt.0.12
 
-before_script: gem update bundler
+before_install: gem update bundler
