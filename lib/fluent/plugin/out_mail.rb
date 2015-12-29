@@ -8,26 +8,55 @@ class Fluent::MailOutput < Fluent::Output
     define_method("log") { $log }
   end
 
+  # For fluentd v0.12.16 or earlier
+  class << self
+    unless method_defined?(:desc)
+      def desc(description)
+      end
+    end
+  end
+
+  desc "Output comma delimited keys"
   config_param :out_keys,             :string,  :default => ""
+  desc "Format string to construct message body"
   config_param :message,              :string,  :default => nil
+  desc "Specify comma delimited keys output to `message`"
   config_param :message_out_keys,     :string,  :default => ""
+  desc "Identify the timestamp of the record"
   config_param :time_key,             :string,  :default => nil
+  desc "Identify the tag of the record"
   config_param :tag_key,              :string,  :default => 'tag'
+  desc "SMTP server hostname"
   config_param :host,                 :string
+  desc "SMTP server port number"
   config_param :port,                 :integer, :default => 25
+  desc "HELO domain"
   config_param :domain,               :string,  :default => 'localdomain'
+  desc "User for SMTP Auth"
   config_param :user,                 :string,  :default => nil
+  desc "Password for SMTP Auth"
   config_param :password,             :string,  :default => nil, :secret => true
+  desc "MAIL FROM this value"
   config_param :from,                 :string,  :default => 'localhost@localdomain'
+  desc "Mail destination (To)"
   config_param :to,                   :string,  :default => ''
+  desc "Mail destination (Cc)"
   config_param :cc,                   :string,  :default => ''
+  desc "Mail destination (BCc)"
   config_param :bcc,                  :string,  :default => ''
+  desc "Format string to construct mail subject"
   config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
+  desc "Specify comma delimited keys output to `subject`"
   config_param :subject_out_keys,     :string,  :default => ""
+  desc "If set to true, enable STARTTLS"
   config_param :enable_starttls_auto, :bool,    :default => false
+  desc "If set to true, enable TLS"
   config_param :enable_tls,           :bool,    :default => false
+  desc "Format string to parse time"
   config_param :time_format,          :string,  :default => "%F %T %z"
+  desc "Use local time or not"
   config_param :localtime,            :bool,    :default => true
+  desc "Locale of time"
   config_param :time_locale,                    :default => nil
   desc "Specify Content-Type"
   config_param :content_type,         :string,  :default => "text/plain; charset=utf-8"
