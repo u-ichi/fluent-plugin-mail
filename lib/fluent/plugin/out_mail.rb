@@ -29,6 +29,8 @@ class Fluent::MailOutput < Fluent::Output
   config_param :time_format,          :string,  :default => "%F %T %z"
   config_param :localtime,            :bool,    :default => true
   config_param :time_locale,                    :default => nil
+  desc "Specify Content-Type"
+  config_param :content_type,         :string,  :default => "text/plain; charset=utf-8"
 
   def initialize
     super
@@ -178,7 +180,7 @@ Bcc: #{@bcc}
 Subject: #{subject}
 Message-Id: #{mid}
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: #{@content_type}
 
 #{body}
 EOF
