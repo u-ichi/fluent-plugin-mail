@@ -1,3 +1,10 @@
+# 0.2.3
+
+Enhancements:
+
+* Add content_type option (thanks to okkez)
+* Support desc if it is available. see http://qiita.com/repeatedly/items/bce628ba75b442424bcf (thanks to okkez)
+
 # 0.2.2
 
 Enhancements:
