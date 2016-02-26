@@ -44,6 +44,12 @@ class Fluent::MailOutput < Fluent::Output
   config_param :cc,                   :string,  :default => ''
   desc "Mail destination (BCc)"
   config_param :bcc,                  :string,  :default => ''
+  desc "Identify mail destination (To) of the record"
+  config_param :to_key,               :string,  :default => nil
+  desc "Identify mail destination (Cc) of the record"
+  config_param :cc_key,               :string,  :default => nil
+  desc "Identify mail destination (BCc) of the record"
+  config_param :bcc_key,              :string,  :default => nil
   desc "Format string to construct mail subject"
   config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
   desc "Specify comma delimited keys output to `subject`"
@@ -90,6 +96,16 @@ class Fluent::MailOutput < Fluent::Output
       @create_message_proc = Proc.new {|tag, time, record| create_key_value_message(tag, time, record) }
     end
 
+    @create_addr_procs = %w(to cc bcc).each_with_object({}) do |type, procs|
+      dest_key = instance_variable_get(:"@#{type}_key")
+      addr = instance_variable_get(:"@#{type}")
+      if dest_key
+        procs[type] = Proc.new{|record| record[dest_key] || addr }
+      else
+        procs[type] = Proc.new{|record| addr }
+      end
+    end
+
     begin
       @subject % (['1'] * @subject_out_keys.length)
     rescue ArgumentError
@@ -106,17 +122,20 @@ class Fluent::MailOutput < Fluent::Output
   def emit(tag, es, chain)
     messages = []
     subjects = []
+    dests = []
 
     es.each {|time,record|
       messages << @create_message_proc.call(tag, time, record)
       subjects << create_formatted_subject(tag, time, record)
+      dests << %w(to cc bcc).each_with_object({}){|t, dest| dest[t] = @create_addr_procs[t].call(record) }
     }
 
     (0...messages.size).each do |i|
       message = messages[i]
       subject = subjects[i]
+      dest = dests[i]
       begin
-        sendmail(subject, message)
+        sendmail(subject, message, dest)
       rescue => e
         log.warn "out_mail: failed to send notice to #{@host}:#{@port}, subject: #{subject}, message: #{message}, " <<
           "error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
@@ -179,7 +198,7 @@ class Fluent::MailOutput < Fluent::Output
     @subject % values
   end
 
-  def sendmail(subject, msg)
+  def sendmail(subject, msg, dest)
     smtp = Net::SMTP.new(@host, @port)
 
     if @user and @password
@@ -203,9 +222,9 @@ class Fluent::MailOutput < Fluent::Output
     content = <<EOF
 Date: #{date}
 From: #{@from}
-To: #{@to}
-Cc: #{@cc}
-Bcc: #{@bcc}
+To: #{dest['to']}
+Cc: #{dest['cc']}
+Bcc: #{dest['bcc']}
 Subject: #{subject}
 Message-Id: #{mid}
 Mime-Version: 1.0
@@ -213,7 +232,7 @@ Content-Type: #{@content_type}
 
 #{body}
 EOF
-    response = smtp.send_mail(content, @from, @to.split(/,/), @cc.split(/,/), @bcc.split(/,/))
+    response = smtp.send_mail(content, @from, dest['to'].split(/,/), dest['cc'].split(/,/), dest['bcc'].split(/,/))
     log.debug "out_mail: content: #{content.gsub("\n", "\\n")}"
     log.debug "out_mail: email send response: #{response.string.chomp}"
     smtp.finish

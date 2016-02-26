@@ -46,6 +46,21 @@ class MailOutputTest < Test::Unit::TestCase
     to localhost@localdomain
   ]
 
+  CONFIG_DEST_ADDR = %[
+    out_keys tag,time,value
+    time_key time
+    time_format %Y/%m/%d %H:%M:%S
+    tag_key tag
+    subject Fluentd Notification Alarm %s
+    subject_out_keys tag
+    host localhost
+    port 25
+    from localhost@localdomain
+    to_key to
+    cc_key cc
+    bcc_key bcc
+  ]
+
   def create_driver(conf=CONFIG_OUT_KEYS,tag='test')
     Fluent::Test::OutputTestDriver.new(Fluent::MailOutput, tag).configure(conf)
   end
@@ -72,6 +87,20 @@ class MailOutputTest < Test::Unit::TestCase
     time = Time.now.to_i
     d.run do
       d.emit({'value' => "message mail from fluentd out_mail"}, time)
+    end
+  end
+
+  def test_dest_addr
+    d = create_driver(CONFIG_DEST_ADDR)
+    time = Time.now.to_i
+    d.run do
+      d.emit({
+        'value' => "message mail from fluentd out_mail",
+        'to' => "localhost@localdomain",
+        'cc' => "localhost@localdomain",
+        'bcc' => "localhost@localdomain",
+        },
+        time)
     end
   end
 
