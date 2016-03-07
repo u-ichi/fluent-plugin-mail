@@ -205,10 +205,23 @@ log server("/etc/td-agent/td-agent.conf")
     </match>
 
 
+### Dynamic identiciation of mail destination (to, cc, bcc)
 
-## TODO
+You can dynamically identify mail destination (to, cc, bcc) from event records as:
 
-* add config "mail_text_format"
+
+```
+<match mail.test>
+  type mail
+  from from@example.com
+  to_key to
+  cc_key cc
+  bcc_key bcc
+  ....
+</match>
+```
+
+With this example, `to`, `cc`, `bcc` are dynamically extracted from `record["to"]`, `record["cc"]`, `record["bcc"]` respectively.
 
 ## ChangeLog
 
