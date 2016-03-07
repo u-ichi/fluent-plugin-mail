@@ -228,7 +228,7 @@ It starts STMP server on localhost:1025, and has Web UI running on localhost:108
 Run Fluentd as:
 
 ```
-$ bundle exec fluentd -c example.conf
+$ bundle exec fluentd -c example/example.conf
 ```
 
 Put a message to the Fluentd as:

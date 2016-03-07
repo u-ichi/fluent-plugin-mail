@@ -42,13 +42,13 @@ class Fluent::MailOutput < Fluent::Output
   config_param :to,                   :string,  :default => ''
   desc "Mail destination (Cc)"
   config_param :cc,                   :string,  :default => ''
-  desc "Mail destination (BCc)"
+  desc "Mail destination (Bcc)"
   config_param :bcc,                  :string,  :default => ''
-  desc "Identify mail destination (To) of the record"
+  desc "Dyanmically identify mail destination (To) from records"
   config_param :to_key,               :string,  :default => nil
-  desc "Identify mail destination (Cc) of the record"
+  desc "Dynamically identify mail destination (Cc) from records"
   config_param :cc_key,               :string,  :default => nil
-  desc "Identify mail destination (BCc) of the record"
+  desc "Dynamically identify mail destination (Bcc) from records"
   config_param :bcc_key,              :string,  :default => nil
   desc "Format string to construct mail subject"
   config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
@@ -96,14 +96,33 @@ class Fluent::MailOutput < Fluent::Output
       @create_message_proc = Proc.new {|tag, time, record| create_key_value_message(tag, time, record) }
     end
 
-    @create_addr_procs = %w(to cc bcc).each_with_object({}) do |type, procs|
-      dest_key = instance_variable_get(:"@#{type}_key")
-      addr = instance_variable_get(:"@#{type}")
-      if dest_key
-        procs[type] = Proc.new{|record| record[dest_key] || addr }
-      else
-        procs[type] = Proc.new{|record| addr }
-      end
+    if @to_key or @cc_key or @bcc_key
+      @process_event_stream_proc = Proc.new {|tag, es|
+        messages = []
+        subjects = []
+        dests = []
+
+        es.each do |time, record|
+          messages << @create_message_proc.call(tag, time, record)
+          subjects << create_formatted_subject(tag, time, record)
+          dests << %w(to cc bcc).each_with_object({}){|t, dest| dest[t] = create_dest_addr(t, record) }
+        end
+
+        [messages, subjects, dests]
+      }
+    else
+      @process_event_stream_proc = Proc.new {|tag, es|
+        messages = []
+        subjects = []
+        dests = []
+
+        es.each do |time, record|
+          messages << @create_message_proc.call(tag, time, record)
+          subjects << create_formatted_subject(tag, time, record)
+        end
+
+        [messages, subjects, dests]
+      }
     end
 
     begin
@@ -120,18 +139,9 @@ class Fluent::MailOutput < Fluent::Output
   end
 
   def emit(tag, es, chain)
-    messages = []
-    subjects = []
-    dests = []
+    messages, subjects, dests = @process_event_stream_proc.call(tag, es)
 
-    es.each {|time,record|
-      messages << @create_message_proc.call(tag, time, record)
-      subjects << create_formatted_subject(tag, time, record)
-      dests << %w(to cc bcc).each_with_object({}){|t, dest| dest[t] = @create_addr_procs[t].call(record) }
-    }
-
-    (0...messages.size).each do |i|
-      message = messages[i]
+    messages.each_with_index do |message, i|
       subject = subjects[i]
       dest = dests[i]
       begin
@@ -198,7 +208,7 @@ class Fluent::MailOutput < Fluent::Output
     @subject % values
   end
 
-  def sendmail(subject, msg, dest)
+  def sendmail(subject, msg, dest = nil)
     smtp = Net::SMTP.new(@host, @port)
 
     if @user and @password
@@ -212,6 +222,9 @@ class Fluent::MailOutput < Fluent::Output
 
     subject = subject.force_encoding('binary')
     body = msg.force_encoding('binary')
+    to = (dest && dest['to']) ? dest['to'] : @to
+    cc = (dest && dest['cc']) ? dest['cc'] : @cc
+    bcc = (dest && dest['bcc']) ? dest['bcc'] : @bcc
 
     # Date: header has timezone, so usually it is not necessary to set locale explicitly
     # But, for people who would see mail header text directly, the locale information may help something
@@ -222,9 +235,9 @@ class Fluent::MailOutput < Fluent::Output
     content = <<EOF
 Date: #{date}
 From: #{@from}
-To: #{dest['to']}
-Cc: #{dest['cc']}
-Bcc: #{dest['bcc']}
+To: #{to}
+Cc: #{cc}
+Bcc: #{bcc}
 Subject: #{subject}
 Message-Id: #{mid}
 Mime-Version: 1.0
@@ -232,7 +245,7 @@ Content-Type: #{@content_type}
 
 #{body}
 EOF
-    response = smtp.send_mail(content, @from, dest['to'].split(/,/), dest['cc'].split(/,/), dest['bcc'].split(/,/))
+    response = smtp.send_mail(content, @from, to.split(/,/), cc.split(/,/), bcc.split(/,/))
     log.debug "out_mail: content: #{content.gsub("\n", "\\n")}"
     log.debug "out_mail: email send response: #{response.string.chomp}"
     smtp.finish
@@ -262,6 +275,16 @@ EOF
       log.info "out_mail: invalid byte sequence is replaced in #{string}"
       string.scrub!('?')
       retry
+    end
+  end
+
+  def create_dest_addr(dest_type, record)
+    addr = instance_variable_get(:"@#{dest_type}")
+    dest_key = instance_variable_get(:"@#{dest_type}_key")
+    if dest_key
+      return record[dest_key] || addr
+    else
+      return addr
     end
   end
 end
