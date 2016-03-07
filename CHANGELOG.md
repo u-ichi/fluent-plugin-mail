@@ -1,3 +1,9 @@
+# 0.2.4
+
+Enhancements:
+
+* Add to_key, cc_key, bcc_key options (thanks to authorNari)
+
 # 0.2.3
 
 Enhancements:
