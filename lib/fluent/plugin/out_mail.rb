@@ -1,60 +1,59 @@
 require 'securerandom'
 require 'net/smtp'
-require 'string/scrub'
 
 class Fluent::Plugin::MailOutput < Fluent::Plugin::Output
   Fluent::Plugin.register_output('mail', self)
 
   desc "Output comma delimited keys"
-  config_param :out_keys,             :string,  :default => ""
+  config_param :out_keys,             :string,  default: ""
   desc "Format string to construct message body"
-  config_param :message,              :string,  :default => nil
+  config_param :message,              :string,  default: nil
   desc "Specify comma delimited keys output to `message`"
-  config_param :message_out_keys,     :string,  :default => ""
+  config_param :message_out_keys,     :string,  default: ""
   desc "Identify the timestamp of the record"
-  config_param :time_key,             :string,  :default => nil
+  config_param :time_key,             :string,  default: nil
   desc "Identify the tag of the record"
-  config_param :tag_key,              :string,  :default => 'tag'
+  config_param :tag_key,              :string,  default: 'tag'
   desc "SMTP server hostname"
   config_param :host,                 :string
   desc "SMTP server port number"
-  config_param :port,                 :integer, :default => 25
+  config_param :port,                 :integer, default: 25
   desc "HELO domain"
-  config_param :domain,               :string,  :default => 'localdomain'
+  config_param :domain,               :string,  default: 'localdomain'
   desc "User for SMTP Auth"
-  config_param :user,                 :string,  :default => nil
+  config_param :user,                 :string,  default: nil
   desc "Password for SMTP Auth"
-  config_param :password,             :string,  :default => nil, :secret => true
+  config_param :password,             :string,  default: nil, secret: true
   desc "MAIL FROM this value"
-  config_param :from,                 :string,  :default => 'localhost@localdomain'
+  config_param :from,                 :string,  default: 'localhost@localdomain'
   desc "Mail destination (To)"
-  config_param :to,                   :string,  :default => ''
+  config_param :to,                   :string,  default: ''
   desc "Mail destination (Cc)"
-  config_param :cc,                   :string,  :default => ''
+  config_param :cc,                   :string,  default: ''
   desc "Mail destination (Bcc)"
-  config_param :bcc,                  :string,  :default => ''
+  config_param :bcc,                  :string,  default: ''
   desc "Dyanmically identify mail destination (To) from records"
-  config_param :to_key,               :string,  :default => nil
+  config_param :to_key,               :string,  default: nil
   desc "Dynamically identify mail destination (Cc) from records"
-  config_param :cc_key,               :string,  :default => nil
+  config_param :cc_key,               :string,  default: nil
   desc "Dynamically identify mail destination (Bcc) from records"
-  config_param :bcc_key,              :string,  :default => nil
+  config_param :bcc_key,              :string,  default: nil
   desc "Format string to construct mail subject"
-  config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
+  config_param :subject,              :string,  default: 'Fluent::MailOutput plugin'
   desc "Specify comma delimited keys output to `subject`"
-  config_param :subject_out_keys,     :string,  :default => ""
+  config_param :subject_out_keys,     :string,  default: ""
   desc "If set to true, enable STARTTLS"
-  config_param :enable_starttls_auto, :bool,    :default => false
+  config_param :enable_starttls_auto, :bool,    default: false
   desc "If set to true, enable TLS"
-  config_param :enable_tls,           :bool,    :default => false
+  config_param :enable_tls,           :bool,    default: false
   desc "Format string to parse time"
-  config_param :time_format,          :string,  :default => "%F %T %z"
+  config_param :time_format,          :string,  default: "%F %T %z"
   desc "Use local time or not"
-  config_param :localtime,            :bool,    :default => true
+  config_param :localtime,            :bool,    default: true
   desc "Locale of time"
-  config_param :time_locale,                    :default => nil
+  config_param :time_locale,                    default: nil
   desc "Specify Content-Type"
-  config_param :content_type,         :string,  :default => "text/plain; charset=utf-8"
+  config_param :content_type,         :string,  default: "text/plain; charset=utf-8"
 
   def initialize
     super
