@@ -1,4 +1,5 @@
 require_relative '../helper'
+require 'fluent/test/driver/output'
 
 class MailOutputTest < Test::Unit::TestCase
   def setup
@@ -61,8 +62,8 @@ class MailOutputTest < Test::Unit::TestCase
     bcc_key bcc
   ]
 
-  def create_driver(conf=CONFIG_OUT_KEYS,tag='test')
-    Fluent::Test::OutputTestDriver.new(Fluent::MailOutput, tag).configure(conf)
+  def create_driver(conf=CONFIG_OUT_KEYS)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::MailOutput).configure(conf)
   end
 
   def test_configure
@@ -77,30 +78,29 @@ class MailOutputTest < Test::Unit::TestCase
   def test_out_keys
     d = create_driver(CONFIG_OUT_KEYS)
     time = Time.now.to_i
-    d.run do
-      d.emit({'value' => "out_keys mail from fluentd out_mail"}, time)
+    d.run(default_tag: 'test') do
+      d.feed(time, {'value' => "out_keys mail from fluentd out_mail"})
     end
   end
 
   def test_message
     d = create_driver(CONFIG_MESSAGE)
     time = Time.now.to_i
-    d.run do
-      d.emit({'value' => "message mail from fluentd out_mail"}, time)
+    d.run(default_tag: 'test') do
+      d.feed(time, {'value' => "message mail from fluentd out_mail"})
     end
   end
 
   def test_dest_addr
     d = create_driver(CONFIG_DEST_ADDR)
     time = Time.now.to_i
-    d.run do
-      d.emit({
+    d.run(default_tag: 'test') do
+      d.feed(time, {
         'value' => "message mail from fluentd out_mail",
         'to' => "localhost@localdomain",
         'cc' => "localhost@localdomain",
         'bcc' => "localhost@localdomain",
-        },
-        time)
+        })
     end
   end
 
@@ -113,4 +113,3 @@ class MailOutputTest < Test::Unit::TestCase
     }
   end
 end
-

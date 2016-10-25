@@ -1,20 +1,9 @@
 require 'securerandom'
+require 'net/smtp'
+require 'string/scrub'
 
-class Fluent::MailOutput < Fluent::Output
+class Fluent::Plugin::MailOutput < Fluent::Plugin::Output
   Fluent::Plugin.register_output('mail', self)
-
-  # Define `log` method for v0.10.42 or earlier
-  unless method_defined?(:log)
-    define_method("log") { $log }
-  end
-
-  # For fluentd v0.12.16 or earlier
-  class << self
-    unless method_defined?(:desc)
-      def desc(description)
-      end
-    end
-  end
 
   desc "Output comma delimited keys"
   config_param :out_keys,             :string,  :default => ""
@@ -69,8 +58,6 @@ class Fluent::MailOutput < Fluent::Output
 
   def initialize
     super
-    require 'net/smtp'
-    require 'string/scrub' if RUBY_VERSION.to_f < 2.1
   end
 
   def configure(conf)
@@ -133,12 +120,14 @@ class Fluent::MailOutput < Fluent::Output
   end
 
   def start
+    super
   end
 
   def shutdown
+    super
   end
 
-  def emit(tag, es, chain)
+  def process(tag, es)
     messages, subjects, dests = @process_event_stream_proc.call(tag, es)
 
     messages.each_with_index do |message, i|
@@ -151,8 +140,6 @@ class Fluent::MailOutput < Fluent::Output
           "error_class: #{e.class}, error_message: #{e.message}, error_backtrace: #{e.backtrace.first}"
       end
     end
-
-    chain.next
   end
 
   # The old `key=value` format for old version compatibility
