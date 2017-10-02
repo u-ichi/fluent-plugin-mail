@@ -17,11 +17,11 @@ class Fluent::MailOutput < Fluent::Output
   end
 
   desc "Output comma delimited keys"
-  config_param :out_keys,             :string,  :default => ""
+  config_param :out_keys,             :array,  :default => []
   desc "Format string to construct message body"
   config_param :message,              :string,  :default => nil
   desc "Specify comma delimited keys output to `message`"
-  config_param :message_out_keys,     :string,  :default => ""
+  config_param :message_out_keys,     :array,  :default => []
   desc "Identify the timestamp of the record"
   config_param :time_key,             :string,  :default => nil
   desc "Identify the tag of the record"
@@ -53,7 +53,7 @@ class Fluent::MailOutput < Fluent::Output
   desc "Format string to construct mail subject"
   config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
   desc "Specify comma delimited keys output to `subject`"
-  config_param :subject_out_keys,     :string,  :default => ""
+  config_param :subject_out_keys,     :array,  :default => []
   desc "If set to true, enable STARTTLS"
   config_param :enable_starttls_auto, :bool,    :default => false
   desc "If set to true, enable TLS"
@@ -75,10 +75,6 @@ class Fluent::MailOutput < Fluent::Output
 
   def configure(conf)
     super
-
-    @out_keys = @out_keys.split(',')
-    @message_out_keys = @message_out_keys.split(',')
-    @subject_out_keys = @subject_out_keys.split(',')
 
     if @out_keys.empty? and @message.nil?
       raise Fluent::ConfigError, "Either 'message' or 'out_keys' must be specifed."
