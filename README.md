@@ -144,7 +144,7 @@ configure td-agent.conf for single node
     </match>
 
 
-### MulatiNode's syslog check
+### MultiNode's syslog check
 
 use config_expander(https://github.com/tagomoris/fluent-plugin-config-expander)
 
