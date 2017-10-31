@@ -14,8 +14,7 @@ Gem::Specification.new do |gem|
   gem.version       = '0.2.4'
   gem.license       = "Apache-2.0"
 
-  gem.add_runtime_dependency "fluentd"
-  gem.add_runtime_dependency "string-scrub" if RUBY_VERSION.to_f < 2.1
+  gem.add_runtime_dependency "fluentd", [">= 0.14.8", "< 2"]
   gem.add_development_dependency "rake"
   gem.add_development_dependency "test-unit"
 end
