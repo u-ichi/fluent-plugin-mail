@@ -76,9 +76,9 @@ class Fluent::MailOutput < Fluent::Output
   def configure(conf)
     super
 
-    @out_keys = @out_keys.split(',')
-    @message_out_keys = @message_out_keys.split(',')
-    @subject_out_keys = @subject_out_keys.split(',')
+    @out_keys = @out_keys.split(/\s*,\s*/)
+    @message_out_keys = @message_out_keys.split(/\s*,\s*/)
+    @subject_out_keys = @subject_out_keys.split(/\s*,\s*/)
 
     if @out_keys.empty? and @message.nil?
       raise Fluent::ConfigError, "Either 'message' or 'out_keys' must be specifed."
