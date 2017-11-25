@@ -1,3 +1,10 @@
+# 0.3.0 (2017-11-25)
+
+Changes:
+
+* Drop Fluentd v0.10 support
+* Use array type for array like parameters (thanks to @cosmo0920)
+
 # 0.2.5 (2017-11-25)
 
 Enhancements:
