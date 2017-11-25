@@ -11,7 +11,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.name          = "fluent-plugin-mail"
   gem.require_paths = ["lib"]
-  gem.version       = '0.2.4'
+  gem.version       = '0.2.5'
   gem.license       = "Apache-2.0"
 
   gem.add_runtime_dependency "fluentd"

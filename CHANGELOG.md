@@ -1,3 +1,9 @@
+# 0.2.5 (2017-11-25)
+
+Enhancements:
+
+* Add `authtype` option (thanks to Ruilin Huang @hrl)
+
 # 0.2.4
 
 Enhancements:
