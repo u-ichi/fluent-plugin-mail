@@ -36,6 +36,8 @@ class Fluent::MailOutput < Fluent::Output
   config_param :user,                 :string,  :default => nil
   desc "Password for SMTP Auth"
   config_param :password,             :string,  :default => nil, :secret => true
+  desc "Scheme for SMTP Auth"
+  config_param :auth_scheme,          :string,  :default => "plain"
   desc "MAIL FROM this value"
   config_param :from,                 :string,  :default => 'localhost@localdomain'
   desc "Mail destination (To)"
@@ -212,10 +214,10 @@ class Fluent::MailOutput < Fluent::Output
     smtp = Net::SMTP.new(@host, @port)
 
     if @user and @password
-      smtp_auth_option = [@domain, @user, @password, :plain]
+      smtp_auth_option = [@domain, @user, @password, @auth_scheme.to_sym]
       smtp.enable_starttls if @enable_starttls_auto
       smtp.enable_tls if @enable_tls
-      smtp.start(@domain,@user,@password,:plain)
+      smtp.start(@domain,@user,@password,@auth_scheme.to_sym)
     else
       smtp.start
     end
