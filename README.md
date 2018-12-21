@@ -233,7 +233,7 @@ Run mail server using [mailcatcher](http://mailcatcher.me/) gem as:
 
 ```
 $ gem install mailcatcher
-$ mailcactcher
+$ mailcatcher
 ```
 
 It starts STMP server on localhost:1025, and has Web UI running on localhost:1080.
