@@ -68,6 +68,8 @@ class Fluent::MailOutput < Fluent::Output
   config_param :time_locale,                    :default => nil
   desc "Specify Content-Type"
   config_param :content_type,         :string,  :default => "text/plain; charset=utf-8"
+  desc "Specify additional headers to add to the message"
+  config_param :additional_headers,   :hash,    :default => {}
 
   def initialize
     super
@@ -230,6 +232,12 @@ class Fluent::MailOutput < Fluent::Output
     date = format_time(Time.now, "%a, %d %b %Y %X %z")
 
     mid = sprintf("<%s@%s>", SecureRandom.uuid, SecureRandom.uuid)
+    additional_headers = @additional_headers.map {|k,v| "#{k}: #{v}"}.join("\n")
+    unless additional_headers.empty?
+      # This is to ensure there is still a blank line between header and body
+      additional_headers += "\n"
+    end
+
     content = <<EOF
 Date: #{date}
 From: #{@from}
@@ -240,7 +248,7 @@ Subject: #{subject}
 Message-Id: #{mid}
 Mime-Version: 1.0
 Content-Type: #{@content_type}
-
+#{additional_headers}
 #{body}
 EOF
     response = smtp.send_mail(content, @from, to.split(/,/), cc.split(/,/), bcc.split(/,/))
