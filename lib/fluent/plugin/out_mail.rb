@@ -17,69 +17,76 @@ class Fluent::MailOutput < Fluent::Output
   end
 
   desc "Output comma delimited keys"
-  config_param :out_keys,             :array,  :default => []
+  config_param :out_keys,              :array,   :default => []
   desc "Format string to construct message body"
-  config_param :message,              :string,  :default => nil
+  config_param :message,               :string,  :default => nil
   desc "Specify comma delimited keys output to `message`"
-  config_param :message_out_keys,     :array,  :default => []
+  config_param :message_out_keys,      :array,   :default => []
+  desc "Path to a Mustache template file to construct message body"
+  config_param :message_template_file, :string,  :default => nil
   desc "Identify the timestamp of the record"
-  config_param :time_key,             :string,  :default => nil
+  config_param :time_key,              :string,  :default => nil
   desc "Identify the tag of the record"
-  config_param :tag_key,              :string,  :default => 'tag'
+  config_param :tag_key,               :string,  :default => 'tag'
   desc "SMTP server hostname"
-  config_param :host,                 :string
+  config_param :host,                  :string
   desc "SMTP server port number"
-  config_param :port,                 :integer, :default => 25
+  config_param :port,                  :integer, :default => 25
   desc "HELO domain"
-  config_param :domain,               :string,  :default => 'localdomain'
+  config_param :domain,                :string,  :default => 'localdomain'
   desc "User for SMTP Auth"
-  config_param :user,                 :string,  :default => nil
+  config_param :user,                  :string,  :default => nil
   desc "Password for SMTP Auth"
-  config_param :password,             :string,  :default => nil, :secret => true
+  config_param :password,              :string,  :default => nil, :secret => true
   desc "Type for SMTP Auth such as 'plain', 'login', and 'cram_md5'"
-  config_param :authtype,             :string,  :default => 'plain'
+  config_param :authtype,              :string,  :default => 'plain'
   desc "MAIL FROM this value"
-  config_param :from,                 :string,  :default => 'localhost@localdomain'
+  config_param :from,                  :string,  :default => 'localhost@localdomain'
   desc "Mail destination (To)"
-  config_param :to,                   :string,  :default => ''
+  config_param :to,                    :string,  :default => ''
   desc "Mail destination (Cc)"
-  config_param :cc,                   :string,  :default => ''
+  config_param :cc,                    :string,  :default => ''
   desc "Mail destination (Bcc)"
-  config_param :bcc,                  :string,  :default => ''
+  config_param :bcc,                   :string,  :default => ''
   desc "Dyanmically identify mail destination (To) from records"
-  config_param :to_key,               :string,  :default => nil
+  config_param :to_key,                :string,  :default => nil
   desc "Dynamically identify mail destination (Cc) from records"
-  config_param :cc_key,               :string,  :default => nil
+  config_param :cc_key,                :string,  :default => nil
   desc "Dynamically identify mail destination (Bcc) from records"
-  config_param :bcc_key,              :string,  :default => nil
+  config_param :bcc_key,               :string,  :default => nil
   desc "Format string to construct mail subject"
-  config_param :subject,              :string,  :default => 'Fluent::MailOutput plugin'
+  config_param :subject,               :string,  :default => 'Fluent::MailOutput plugin'
   desc "Specify comma delimited keys output to `subject`"
-  config_param :subject_out_keys,     :array,  :default => []
+  config_param :subject_out_keys,      :array,   :default => []
   desc "If set to true, enable STARTTLS"
-  config_param :enable_starttls_auto, :bool,    :default => false
+  config_param :enable_starttls_auto,  :bool,    :default => false
   desc "If set to true, enable TLS"
-  config_param :enable_tls,           :bool,    :default => false
+  config_param :enable_tls,            :bool,    :default => false
   desc "Format string to parse time"
-  config_param :time_format,          :string,  :default => "%F %T %z"
+  config_param :time_format,           :string,  :default => "%F %T %z"
   desc "Use local time or not"
-  config_param :localtime,            :bool,    :default => true
+  config_param :localtime,             :bool,    :default => true
   desc "Locale of time"
-  config_param :time_locale,                    :default => nil
+  config_param :time_locale,                     :default => nil
   desc "Specify Content-Type"
-  config_param :content_type,         :string,  :default => "text/plain; charset=utf-8"
-
+  config_param :content_type,          :string,  :default => "text/plain; charset=utf-8"
   def initialize
     super
     require 'net/smtp'
     require 'string/scrub' if RUBY_VERSION.to_f < 2.1
+    require "mustache"
   end
 
   def configure(conf)
     super
 
-    if @out_keys.empty? and @message.nil?
-      raise Fluent::ConfigError, "Either 'message' or 'out_keys' must be specifed."
+    if @out_keys.empty? and @message.nil? and @message_template_file.nil?
+      raise Fluent::ConfigError, "Either 'message' or 'out_keys' or 'message_template_file' must be specifed."
+    end
+
+    if @message_template_file
+      raise Fluent::ConfigError, "Message template #{@message_template_file} file does not exists" unless File.file?(@message_template_file)
+      @message_template = File.open(@message_template_file, "r").read
     end
 
     if @message
@@ -89,6 +96,8 @@ class Fluent::MailOutput < Fluent::Output
         raise Fluent::ConfigError, "string specifier '%s' of message and message_out_keys specification mismatch"
       end
       @create_message_proc = Proc.new {|tag, time, record| create_formatted_message(tag, time, record) }
+    elsif @message_template
+      @create_message_proc = Proc.new {|tag, time, record| Mustache.render(@message_template, { :tag => tag, :time => format_time(time, @time_format) }.merge(record)) }
     else
       # The default uses the old `key=value` format for old version compatibility
       @create_message_proc = Proc.new {|tag, time, record| create_key_value_message(tag, time, record) }
@@ -103,7 +112,7 @@ class Fluent::MailOutput < Fluent::Output
         es.each do |time, record|
           messages << @create_message_proc.call(tag, time, record)
           subjects << create_formatted_subject(tag, time, record)
-          dests << %w(to cc bcc).each_with_object({}){|t, dest| dest[t] = create_dest_addr(t, record) }
+          dests << %w(to cc bcc).each_with_object({}) {|t, dest| dest[t] = create_dest_addr(t, record) }
         end
 
         [messages, subjects, dests]
@@ -172,8 +181,6 @@ class Fluent::MailOutput < Fluent::Output
   end
 
   def create_formatted_message(tag, time, record)
-    values = []
-
     values = @message_out_keys.map do |key|
       case key
       when @time_key
