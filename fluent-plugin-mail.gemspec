@@ -16,6 +16,7 @@ Gem::Specification.new do |gem|
 
   gem.add_runtime_dependency "fluentd", '>= 0.12.0'
   gem.add_runtime_dependency "string-scrub" if RUBY_VERSION.to_f < 2.1
+  gem.add_runtime_dependency "mustache", '~> 1.0'
   gem.add_development_dependency "rake"
   gem.add_development_dependency "test-unit"
 end
